@@ -3,65 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Report Damaged Facility</title>
+    <title>Report Damage</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-
-<h2>Report Damaged Facility</h2>
-
-<form id="reportForm">
-    <label for="photo">Upload Photo:</label>
-    <input type="file" id="photo" accept="image/*" required>
-
-    <label for="comment">Describe the damage:</label>
-    <textarea id="comment" rows="4" placeholder="Describe the damage..." required></textarea>
-
-    <button type="submit">Submit Report</button>
-</form>
-
-<div id="message"></div>
-
-<script>
-    // API 엔드포인트를 변수로 선언
-    const apiEndpoint = 'https://your-api-gateway-endpoint';
-
-    document.getElementById('reportForm').addEventListener('submit', function(event) {
-        event.preventDefault();
-        submitReport();
-    });
-
-    function submitReport() {
-        const photoInput = document.getElementById('photo');
-        const commentInput = document.getElementById('comment');
-        const messageDiv = document.getElementById('message');
-
-        if (photoInput.files.length === 0) {
-            alert('Please select a photo to upload.');
-            return;
-        }
-
-        const file = photoInput.files[0];
-        const comment = commentInput.value;
-
-        const formData = new FormData();
-        formData.append('photo', file);
-        formData.append('comment', comment);
-
-        // fetch 호출에서 변수를 사용
-        fetch(apiEndpoint, {
-            method: 'POST',
-            body: formData
-        })
-        .then(response => response.json())
-        .then(data => {
-            messageDiv.innerText = 'Report submitted successfully!';
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            messageDiv.innerText = 'Failed to submit report.';
-        });
-    }
-</script>
-
+    <div class="container">
+        <h1>Report Damage</h1>
+        <form id="damageReportForm">
+            <label for="photo">Upload Photo:</label>
+            <input type="file" id="photo" name="photo" accept="image/*" required>
+            
+            <label for="comment">Comment:</label>
+            <textarea id="comment" name="comment" placeholder="Describe the damage..." required></textarea>
+            
+            <button type="submit">Submit</button>
+        </form>
+        <div id="statusMessage"></div>
+    </div>
+    <script src="script.js"></script>
 </body>
 </html>
