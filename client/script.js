@@ -13,8 +13,8 @@ document.getElementById('damageReportForm').addEventListener('submit', function(
     formData.append('photo', photo);
     formData.append('comment', comment);
     
-    // Replace with your actual API endpoint
-    const apiUrl = 'https://your-api-endpoint.amazonaws.com/upload';
+    // 이 부분 추후 수정정
+    const apiUrl = "https://6ea43qcw17.execute-api.ap-south-1.amazonaws.com/---specific-resource-path from API gateway integration---";
 
     fetch(apiUrl, {
         method: 'POST',
