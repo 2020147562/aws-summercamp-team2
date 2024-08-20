@@ -44,11 +44,31 @@ def lambda_handler(event, context):
         # 성공적인 저장 로그 남기기
         print(f"Successfully stored metadata in DynamoDB with report_id: {report_id}")
         
+        # Lambda 클라이언트 생성
+        lambda_client = boto3.client('lambda')
+        
+        # Slack 메시지 전송을 위해 team2-slack-message-lambda 호출
+        slack_payload = {
+            'report_id': report_id,
+            'image_url': image_s3_url,
+            'metadata': metadata,
+            'timestamp': timestamp
+        }
+        
+        response = lambda_client.invoke(
+            FunctionName='team2-slack-message-lambda',  # 실제 Lambda 함수 이름으로 변경
+            InvocationType='Event',  # 비동기 호출
+            Payload=json.dumps(slack_payload)
+        )
+        
+        # Lambda 호출 결과 로그 남기기
+        print(f"Invoked team2-slack-message-lambda with response: {response}")
+        
         # 성공적인 응답 반환
         return {
             'statusCode': 200,
             'body': json.dumps({
-                'message': 'Image metadata stored successfully',
+                'message': 'Image metadata stored successfully and Slack notification sent',
                 'image_url': image_s3_url
             })
         }
