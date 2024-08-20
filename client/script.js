@@ -1,20 +1,20 @@
 document.getElementById('damageReportForm').addEventListener('submit', function(event) {
     event.preventDefault();
     
-    const photo = document.getElementById('photo').files[0];
+    const image = document.getElementById('image').files[0];
     const comment = document.getElementById('comment').value;
     
-    if (!photo || !comment) {
-        alert('Please provide both a photo and a comment.');
+    if (!image || !comment) {
+        alert('Please provide both an image and a comment.');
         return;
     }
     
     const formData = new FormData();
-    formData.append('photo', photo);
+    formData.append('image', image);
     formData.append('comment', comment);
     
-    // 이 부분 추후 수정정
-    const apiUrl = "https://6ea43qcw17.execute-api.ap-south-1.amazonaws.com/---specific-resource-path from API gateway integration---";
+    // Replace with your actual API endpoint
+    const apiUrl = "https://6ea43qcw17.execute-api.ap-south-1.amazonaws.com/data_handling";
 
     fetch(apiUrl, {
         method: 'POST',
