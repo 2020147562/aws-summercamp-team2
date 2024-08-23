@@ -21,8 +21,8 @@ def lambda_handler(event, context):
                 'body': json.dumps({'message': 'No image URL provided'})
             }
         
-        # 추가적인 메타데이터 처리 (예: comment 필드 추출)
-        comment = metadata.get('comment', '')
+        # 추가적인 메타데이터 처리 (예: location 필드 추출)
+        location = metadata.get('location', '')
         
         # 현재 시간
         timestamp = datetime.utcnow().isoformat()

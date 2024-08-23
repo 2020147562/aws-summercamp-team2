@@ -2,10 +2,10 @@ document.getElementById('damageReportForm').addEventListener('submit', function(
     event.preventDefault();
 
     const image = document.getElementById('image').files[0];
-    const comment = document.getElementById('comment').value;
+    const location = document.getElementById('location').value;
 
-    if (!image || !comment) {
-        alert('Please provide both an image and a comment.');
+    if (!image || !location) {
+        alert('Please provide both an image and a location.');
         return;
     }
 
@@ -18,11 +18,11 @@ document.getElementById('damageReportForm').addEventListener('submit', function(
 
                 const formData = new FormData();
                 formData.append('image', image);
-                formData.append('comment', comment);
+                formData.append('location', location);
                 formData.append('latitude', latitude);
                 formData.append('longitude', longitude);
 
-                // Replace with your actual API endpoint
+                // API endpoint
                 const apiUrl = "https://6ea43qcw17.execute-api.ap-south-1.amazonaws.com/data_handling";
 
                 fetch(apiUrl, {

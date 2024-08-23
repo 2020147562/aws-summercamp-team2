@@ -31,7 +31,7 @@ def lambda_handler(event, context):
     
     # 이미지와 코멘트 추출
     image = form_data['image']
-    comment = form_data['comment'].value
+    location = form_data['location'].value
     
     # 고유한 파일 이름 생성
     image_file_name = f"{uuid.uuid4()}.jpg"
@@ -131,7 +131,7 @@ def lambda_handler(event, context):
 
     # metadata 구조 생성
     metadata = {
-        "comment": comment,
+        "location": location,
         "product": what_it_is_str.strip(),
         "priority": how_much_broken_str.strip(),
     }
