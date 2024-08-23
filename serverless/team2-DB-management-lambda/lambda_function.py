@@ -30,16 +30,21 @@ def lambda_handler(event, context):
         # 고유 ID 생성 (숫자 타입으로)
         report_id = int(uuid.uuid4().int >> 64)  # UUID의 상위 64비트를 사용하여 숫자 생성
         
+        # DynamoDB에 저장할 데이터 구성
+        item_to_store = {
+            'report_id': report_id,  # 숫자(Number) 타입으로 저장
+            'image_url': image_s3_url,
+            'metadata': metadata,
+            'uploaded_at': timestamp
+        }
+        
+        # CloudWatch 로그에 DynamoDB에 저장할 데이터 출력
+        print("Storing the following item in DynamoDB:")
+        print(json.dumps(item_to_store, indent=2))
+        
         # DynamoDB에 메타데이터 저장
         table = dynamodb.Table(dynamodb_table_name)
-        table.put_item(
-            Item={
-                'report_id': report_id,  # 숫자(Number) 타입으로 저장
-                'image_url': image_s3_url,
-                'metadata': metadata,
-                'uploaded_at': timestamp
-            }
-        )
+        table.put_item(Item=item_to_store)
         
         # 성공적인 저장 로그 남기기
         print(f"Successfully stored metadata in DynamoDB with report_id: {report_id}")
@@ -54,6 +59,10 @@ def lambda_handler(event, context):
             'metadata': metadata,
             'timestamp': timestamp
         }
+        
+        # CloudWatch 로그에 Slack에 전송할 데이터 출력
+        print("Sending the following payload to Slack Lambda:")
+        print(json.dumps(slack_payload, indent=2))
         
         response = lambda_client.invoke(
             FunctionName='team2-slack-message-lambda',  # 실제 Lambda 함수 이름으로 변경
