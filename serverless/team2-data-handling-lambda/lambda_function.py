@@ -72,24 +72,32 @@ def lambda_handler(event, context):
                             },
                         },
                         {"type": "text",
-                         "text": "Tell me what is in this image. You don't need to describe any further information about your decision"},
+                         "text": "Provide a one or two-word description of the main object in this image. Respond with only the description, nothing else."},
                     ],
                 }
             ],
         }
     )
-
+    
     response = runtime.invoke_model(
         modelId="anthropic.claude-3-sonnet-20240229-v1:0",
         body=body
     )
-    # Claude의 응답을 dict 타입으로 파싱
-    response_body = json.loads(response.get("body").read())
+    # StreamingBody에서 실제 응답 데이터를 읽어옴
+    response_body_string = response['body'].read().decode('utf-8')
+    
+    # JSON 문자열을 파싱하여 Python 딕셔너리로 변환
+    response_body = json.loads(response_body_string)
+    
+    print(f"response_body : {response_body}")
     
     # 응답에서 텍스트 추출 (예: 'Broken Chair, 5/10'와 같은 형식)
-    what_it_is_str = response_body.get("text", "")
-    
-    # Claude의 응답 출력 (첫 번째 요청)
+    if response_body.get("content"):
+        what_it_is_str = response_body["content"][0].get("text", "")
+    else:
+        what_it_is_str = ""
+
+    # Claude의 응답 출력 (첫번째 요청)
     print(f"Claude response (what_it_is_str): {what_it_is_str}")
 
     # Claude 3.5를 이용하여 '이미지 사물 종류 / 사물의 파손 정도'를 응답으로 받음.
@@ -110,7 +118,7 @@ def lambda_handler(event, context):
                             },
                         },
                         {"type": "text",
-                         "text": "Tell me the repair priority based on how much it broken from 1 to 10, respond like '5/10'. You don't need to describe any further information about your decision"},
+                         "text": "Rate the repair priority for this image on a scale from 1 to 10. Respond with the number followed by '/10' without any additional explanation or information. For example, respond with '5/10'."},
                     ],
                 }
             ],
@@ -121,12 +129,21 @@ def lambda_handler(event, context):
         modelId="anthropic.claude-3-sonnet-20240229-v1:0",
         body=body
     )
-    # Claude의 응답을 dict 타입으로 파싱
-    response_body = json.loads(response.get("body").read())
+    # StreamingBody에서 실제 응답 데이터를 읽어옴
+    response_body_string = response['body'].read().decode('utf-8')
     
-    how_much_broken_str = response_body.get("text", "")
+    # JSON 문자열을 파싱하여 Python 딕셔너리로 변환
+    response_body = json.loads(response_body_string)
+    
+    print(f"response_body : {response_body}")
+    
+    # 응답에서 텍스트 추출 (예: 'Broken Chair, 5/10'와 같은 형식)
+    if response_body.get("content"):
+        how_much_broken_str = response_body["content"][0].get("text", "")
+    else:
+        how_much_broken_str = ""
 
-    # Claude의 응답 출력 (두 번째 요청)
+    # Claude의 응답 출력 (두번째 요청)
     print(f"Claude response (how_much_broken_str): {how_much_broken_str}")
 
     # metadata 구조 생성
