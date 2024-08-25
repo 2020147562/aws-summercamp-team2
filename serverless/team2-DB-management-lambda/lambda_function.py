@@ -2,6 +2,7 @@ import boto3
 import uuid
 import json
 from datetime import datetime
+from decimal import Decimal
 
 def lambda_handler(event, context):
     try:
@@ -21,8 +22,14 @@ def lambda_handler(event, context):
                 'body': json.dumps({'message': 'No image URL provided'})
             }
         
-        # 추가적인 메타데이터 처리 (예: location 필드 추출)
-        location = metadata.get('location', '')
+        # 위도와 경도를 Decimal로 변환하여 저장
+        latitude = metadata.get('latitude')
+        longitude = metadata.get('longitude')
+        
+        if latitude is not None:
+            metadata['latitude'] = Decimal(str(latitude))
+        if longitude is not None:
+            metadata['longitude'] = Decimal(str(longitude))
         
         # 현재 시간
         timestamp = datetime.utcnow().isoformat()
@@ -34,13 +41,13 @@ def lambda_handler(event, context):
         item_to_store = {
             'report_id': report_id,  # 숫자(Number) 타입으로 저장
             'image_url': image_s3_url,
-            'metadata': metadata,
+            'metadata': convert_float_to_decimal(metadata),  # 메타데이터 변환
             'uploaded_at': timestamp
         }
         
         # CloudWatch 로그에 DynamoDB에 저장할 데이터 출력
         print("Storing the following item in DynamoDB:")
-        print(json.dumps(item_to_store, indent=2))
+        print(json.dumps(item_to_store, indent=2, default=str))  # default=str를 추가하여 Decimal 객체를 문자열로 변환
         
         # DynamoDB에 메타데이터 저장
         table = dynamodb.Table(dynamodb_table_name)
@@ -56,7 +63,7 @@ def lambda_handler(event, context):
         slack_payload = {
             'report_id': report_id,
             'image_url': image_s3_url,
-            'metadata': metadata,
+            'metadata': json.loads(json.dumps(metadata, default=str)),  # Slack에 보낼 데이터를 JSON으로 변환하기 전에 Decimal을 문자열로 변환
             'timestamp': timestamp
         }
         
@@ -89,3 +96,16 @@ def lambda_handler(event, context):
             'statusCode': 500,
             'body': json.dumps({'message': 'An error occurred', 'error': str(e)})
         }
+
+def convert_float_to_decimal(data):
+    """
+    Recursively convert all floats in a dictionary to Decimal for DynamoDB.
+    """
+    if isinstance(data, dict):
+        return {k: convert_float_to_decimal(v) for k, v in data.items()}
+    elif isinstance(data, list):
+        return [convert_float_to_decimal(v) for v in data]
+    elif isinstance(data, float):
+        return Decimal(str(data))
+    else:
+        return data
