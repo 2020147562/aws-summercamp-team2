@@ -47,13 +47,25 @@ def lambda_handler(event, context):
     image_file_name = f"{uuid.uuid4()}.jpg"
     
     # S3에 이미지 업로드
-    s3.put_object(
-        Bucket=s3_bucket_name,
-        Key=image_file_name,
-        Body=image.file.read(),
-        ContentType='image/jpeg'
-    )
-    
+    image.file.seek(0)  # 업로드 전 파일 포인터를 처음으로 되돌림
+    try:
+        s3.put_object(
+            Bucket=s3_bucket_name,
+            Key=image_file_name,
+            Body=image.file.read(),
+            ContentType=image.type  # 업로드된 파일의 실제 MIME 타입을 사용
+        )
+        print(f"Image successfully uploaded to S3 with key: {image_file_name}")
+    except Exception as e:
+        print(f"Failed to upload image to S3: {e}")
+        return {
+            'statusCode': 500,
+            'body': json.dumps({
+                'success': False,
+                'message': 'Failed to upload image to S3'
+            })
+        }
+
     # 업로드된 이미지의 S3 URL 생성
     s3_image_url = f"https://{s3_bucket_name}.s3.amazonaws.com/{image_file_name}"
 
@@ -83,7 +95,7 @@ def lambda_handler(event, context):
                             },
                         },
                         {"type": "text",
-                         "text": "Provide a one or two-word description of the main object in this image. Respond with only the description, nothing else."},
+                         "text": "이 사진에 있는 물체를 알려주세요. 사진의 물체가 시설이나 가구 등이 아니면 '잘못된 입력'이라고 대답하세요. 그렇지 않으면 물체의 상태와 종류를 설명해주세요. 상태는 부서진, 구멍 난, 긁힌 등으로 표현하며, 물체가 손상되지 않았고 구멍이나 긁힘이 없다면 상태를 (완전함)으로 표현하세요. 물체의 종류는 문, 건물, 거울, 창문 등의 단어를 사용하여 설명하세요. 예를 들어, 긁힌 창문의 사진이 제출되면 '긁힌 창문'이라고 대답하세요. 설명하는 문장은 반환하지 마세요. 답변은 1~3개 단어로만 해주세요."},
                     ],
                 }
             ],
@@ -156,12 +168,61 @@ def lambda_handler(event, context):
 
     # Claude의 응답 출력 (두번째 요청)
     print(f"Claude response (how_much_broken_str): {how_much_broken_str}")
+    
+    
+    # Claude 3.5를 이용하여 '이미지 사물 종류 / 사물의 파손 정도'를 응답으로 받음.
+    body = json.dumps(
+        {
+            "anthropic_version": "bedrock-2023-05-31",
+            "max_tokens": 1000,
+            "messages": [
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "image",
+                            "source": {
+                                "type": "base64",
+                                "media_type": "image/jpeg",
+                                "data": encoded_image,
+                            },
+                        },
+                        {"type": "text",
+                         "text": "손상된 물체의 영역을 손상된 부분의 이름, 손상 유형, 그리고 손상 정도로 한 문장으로 설명하세요. 한 문장을 초과하지 않고, 요청된 설명 외의 표현을 추가하지 마세요. 문의 문손잡이나 창문의 틀처럼 대상의 부분을 언급하여 손상된 부분의 이름을 지정하세요. 손상이 심각하거나 한 부분만으로 요약될 수 없는 경우, 문이나 창문과 같은 대상 자체를 사용하세요. 손상 유형은 구멍, 파손 또는 화상과 같이 대상이 수리가 필요한 이유를 명시해야 합니다. 손상 정도는 손상 유형에 관련된 용어로, 경미하거나 심각한 등으로 설명해야 합니다."},
+                    ],
+                }
+            ],
+        }
+    )
 
+    response = runtime.invoke_model(
+        modelId="anthropic.claude-3-sonnet-20240229-v1:0",
+        body=body
+    )
+    # StreamingBody에서 실제 응답 데이터를 읽어옴
+    response_body_string = response['body'].read().decode('utf-8')
+    
+    # JSON 문자열을 파싱하여 Python 딕셔너리로 변환
+    response_body = json.loads(response_body_string)
+    
+    print(f"response_body : {response_body}")
+    
+    # 응답에서 텍스트 추출 (예: 'Broken Chair, 5/10'와 같은 형식)
+    if response_body.get("content"):
+        what_is_broken_str = response_body["content"][0].get("text", "")
+    else:
+        what_is_broken_str = ""
+
+    # Claude의 응답 출력 (두번째 요청)
+    print(f"Claude response (what_is_broken_str): {what_is_broken_str}")
+
+    
     # metadata 구조 생성
     metadata = {
         "location": location,
         "product": what_it_is_str.strip(),
         "priority": how_much_broken_str.strip(),
+        "description" : what_is_broken_str.strip(),
         "latitude": latitude,
         "longitude": longitude
     }
